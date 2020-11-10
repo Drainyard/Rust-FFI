@@ -1,13 +1,6 @@
-[package]
-name = "ffi_test"
-version = "0.1.0"
-authors = ["Niels Bross <niels@glitchheart.com>"]
-edition = "2018"
+[workspace]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-libc = "0.2.80"
-
-[lib]
-crate-type = ["cdylib"]
+members = [
+	"rustinc",
+	"cinrust"
+]
