@@ -184,6 +184,7 @@ struct BITMAPINFOHEADER {
 }
 
 #[repr(C)]
+#[derive(Default)]
 struct RGBQUAD {
   rgbBlue:     BYTE, 
   rgbGreen:    BYTE, 
@@ -191,18 +192,12 @@ struct RGBQUAD {
   rgbReserved: BYTE
 }
 
+
 #[repr(C)]
 struct BITMAPINFO {
   bmiHeader: BITMAPINFOHEADER,
   bmiColors: [RGBQUAD; 1]
 }
-
-// impl BITMAPINFO {
-//     fn new() -> BITMAPINFO {
-//         BITMAPINFO { bmiHeader: , bmiColors: }
-//     }
-// }
-
 
 extern "system" {
     fn CreateWindowExA(dwExStyle: DWORD, lpClassName: LPCSTR, lpWindowName: LPCSTR,
@@ -211,6 +206,8 @@ extern "system" {
     fn GetModuleHandleA(lpModuleName: LPCSTR) -> HMODULE;
     fn RegisterClassA(lpWndClass: * const WNDCLASSA) -> ATOM;
     fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> BOOL;
+
+    fn CreateCompatibleDC(hdc: HDC) -> HDC;
     fn GetLastError() -> DWORD;
     fn DefWindowProcA(hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT;
     fn DestroyWindow(hWnd: HWND) -> BOOL;
@@ -283,8 +280,6 @@ pub struct Win32Window {
     user_data: WindowPtrData
 }
 
-
-
 fn set_running(hwnd: HWND, running: bool) {
     unsafe {
         let mut data = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as *mut WindowPtrData;
@@ -293,6 +288,20 @@ fn set_running(hwnd: HWND, running: bool) {
             SetWindowLongPtrA(hwnd, GWLP_USERDATA, data as isize);
         }
     }
+}
+
+fn get_window_ptr(hwnd: HWND) -> Option<WindowPtrData> {
+    let data = 
+    unsafe {
+        let data = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as *mut WindowPtrData;
+        if data.is_null() {
+            Some(*data)
+        }
+        else {
+            None
+        }
+    };
+    data
 }
 
 pub const GWLP_USERDATA: INT = -21;
@@ -304,7 +313,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, u_msg: UINT, w_param: WPARAM, 
             GetClientRect(hwnd, &mut rect);
             let width = rect.right - rect.left;
             let height = rect.bottom - rect.top;
-            on_size(width, height);
+            on_size(hwnd, width, height);
             DefWindowProcA(hwnd, u_msg, w_param, l_param)
         },
         WM_DESTROY => {
@@ -338,12 +347,12 @@ pub const SRCCOPY: DWORD = 0xCC0020;
 
 pub const BI_RGB: UINT = 0;
 
-fn on_size(hdc: HDC, width: c_int, height: c_int) {
+fn on_size(h_wnd: HWND, width: c_int, height: c_int) {
     unsafe {
         let bitmap_info_header: BITMAPINFOHEADER = Default::default();
         bitmap_info_header.biSize = std::mem::size_of::<BITMAPINFOHEADER>() as u32;
-        bitmap_info_header.width = width;
-        bitmap_info_header.height = height;
+        bitmap_info_header.biWidth = width;
+        bitmap_info_header.biHeight = height;
         bitmap_info_header.biPlanes = 1;
         bitmap_info_header.biBitCount = 32;
         bitmap_info_header.biCompression = BI_RGB;
@@ -352,10 +361,13 @@ fn on_size(hdc: HDC, width: c_int, height: c_int) {
         bitmap_info_header.biYPelsPerMeter = 0;
         bitmap_info_header.biClrUsed = 0;
         bitmap_info_header.biClrImportant = 0;
-        let bitmap_info = BITMAPINFO { bmiHeader: bitmap_info_header, };
-        let bitmap_memory = ;
-        let bitmap = CreateDIBSection(hdc, &mut bitmap_info, DIB_RGB_COLORS, &mut bitmap_memory,
-                                      ptr::null_mut(), ptr::null_mut());
+        let bitmap_info = BITMAPINFO { bmiHeader: bitmap_info_header, bmiColors: [Default::default()]};
+        let mut bitmap_memory: [u32; 800 * 600] = [0; 800 * 600];
+
+        let hdc = CreateCompatibleDC(ptr::null_mut());
+        
+        let bitmap = CreateDIBSection(hdc, &mut bitmap_info, DIB_RGB_COLORS, bitmap_memory.as_mut_ptr() as *mut *mut c_void,
+                                      ptr::null_mut(), 0);
     }
 }
 
@@ -382,7 +394,7 @@ pub const CW_USEDEFAULT: c_int = 2147483648u32 as c_int;
 
 
 impl Window for Win32Window {
-    fn create_window(name: &str) -> Win32Window {
+    fn create_window(name: &str, width: i32, height: i32) -> Win32Window {
         let class_name = CString::new("Sample Window Class").expect("CString::new failed");
         let name = CString::new("Hello, world!").expect("CString::new failed");
         
@@ -397,7 +409,7 @@ impl Window for Win32Window {
             RegisterClassA(&wnd_class);
             
             let hwnd = CreateWindowExA(0, class_name.as_ptr(), name.as_ptr(), WS_OVERLAPPEDWINDOW,
-                                       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, ptr::null_mut(),
+                                       CW_USEDEFAULT, CW_USEDEFAULT, width as c_int, height as c_int, ptr::null_mut(),
                                        ptr::null_mut(), h_instance, ptr::null_mut());
 
             if hwnd.is_null() {
@@ -418,7 +430,7 @@ impl Window for Win32Window {
         }
     }
 
-    fn is_running(&self) -> bool {
+    fn is_open(&self) -> bool {
         unsafe {
             let data = GetWindowLongPtrA(self.hwnd, GWLP_USERDATA) as *const WindowPtrData;
             if data.is_null() {
@@ -439,6 +451,6 @@ impl Window for Win32Window {
     }
 }
 
-pub fn create_window(name: &str) -> Win32Window {
-    Win32Window::create_window(name)
+pub fn create_window(name: &str, width: i32, height: i32) -> Win32Window {
+    Win32Window::create_window(name, width, height)
 }
