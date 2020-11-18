@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct WindowPtrData {
-    pub running: bool
+
 }
 
 pub trait Window {

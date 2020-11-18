@@ -118,6 +118,8 @@ type HDC = *mut HDC__;
 pub enum HBITMAP__ {}
 type HBITMAP = *mut HBITMAP__;
 
+type HGDIOBJ = *mut c_void;
+
 #[repr(C)]
 struct RECT {
     pub left: LONG,
@@ -194,6 +196,7 @@ struct RGBQUAD {
 
 
 #[repr(C)]
+#[derive(Default)]
 struct BITMAPINFO {
   bmiHeader: BITMAPINFOHEADER,
   bmiColors: [RGBQUAD; 1]
@@ -233,6 +236,8 @@ extern "system" {
     fn EndPaint(hwnd: HWND, lpPaint: *const PAINTSTRUCT) -> BOOL;
 
     fn CreateSolidBrush(color: COLORREF) -> HBRUSH;
+
+    fn DeleteObject(ho: HGDIOBJ) -> BOOL;
 }
 
 fn LOWORD(l: DWORD) -> WORD {
@@ -275,27 +280,60 @@ const IDOK: INT = 1;
 
 const COLOR_WINDOW: UINT = 5;
 
-pub struct Win32Window {
-    pub hwnd: HWND,
-    user_data: WindowPtrData
+struct Win32WindowState {
+    bitmap_device_context: HDC,
+    bitmap_handle: HBITMAP,
+    bitmap_info: BITMAPINFO,
+
+    bitmap_memory: *mut u32,
+
+    open: bool
 }
 
-fn set_running(hwnd: HWND, running: bool) {
-    unsafe {
-        let mut data = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as *mut WindowPtrData;
-        if !data.is_null() {
-            (*data).running = running;
-            SetWindowLongPtrA(hwnd, GWLP_USERDATA, data as isize);
+impl Win32WindowState {
+    fn new() -> Win32WindowState {
+        Win32WindowState {
+            bitmap_device_context: ptr::null_mut(),
+            bitmap_handle: ptr::null_mut(),
+            bitmap_info: Default::default(),
+            bitmap_memory: ptr::null_mut(),
+
+            open: false
         }
     }
 }
 
-fn get_window_ptr(hwnd: HWND) -> Option<WindowPtrData> {
+pub struct Win32Window {
+    pub hwnd: HWND,
+
+    window_state: Win32WindowState
+}
+
+fn set_open(hwnd: HWND, open: bool) {
+    match get_window_ptr(hwnd) {
+        Some(state) => {
+            state.open = open;
+            set_window_ptr(hwnd, state);
+        },
+        None => {
+            ()
+        }
+    }
+}
+
+fn set_window_ptr(hwnd: HWND, win_state: &Win32WindowState) {
+    unsafe {
+        SetWindowLongPtrA(hwnd, GWLP_USERDATA, (win_state as *const Win32WindowState) as isize);
+    }
+}
+
+fn get_window_ptr<'a>(hwnd: HWND) -> Option<&'a mut Win32WindowState> {
     let data = 
     unsafe {
-        let data = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as *mut WindowPtrData;
+        let data = GetWindowLongPtrA(hwnd, GWLP_USERDATA) as *mut Win32WindowState;
         if data.is_null() {
-            Some(*data)
+            let data: &'a mut Win32WindowState = &mut *data;
+            Some(data)
         }
         else {
             None
@@ -317,7 +355,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, u_msg: UINT, w_param: WPARAM, 
             DefWindowProcA(hwnd, u_msg, w_param, l_param)
         },
         WM_DESTROY => {
-            set_running(hwnd, false);
+            set_open(hwnd, false);
             0
         },
         WM_PAINT => {
@@ -333,7 +371,7 @@ unsafe extern "system" fn window_proc(hwnd: HWND, u_msg: UINT, w_param: WPARAM, 
             DefWindowProcA(hwnd, u_msg, w_param, l_param)
         },
         WM_CLOSE => {
-            set_running(hwnd, false);
+            set_open(hwnd, false);
             0
         },
         _ => DefWindowProcA(hwnd, u_msg, w_param, l_param)
@@ -347,9 +385,25 @@ pub const SRCCOPY: DWORD = 0xCC0020;
 
 pub const BI_RGB: UINT = 0;
 
-fn on_size(h_wnd: HWND, width: c_int, height: c_int) {
+fn delete_object(ptr: *mut c_void) -> BOOL {
     unsafe {
-        let bitmap_info_header: BITMAPINFOHEADER = Default::default();
+        DeleteObject(ptr)
+    }
+}
+
+fn on_size(h_wnd: HWND, width: c_int, height: c_int) {
+    if let Some(mut window_state) = get_window_ptr(h_wnd) {
+        if !window_state.bitmap_handle.is_null() {
+            delete_object(window_state.bitmap_handle as HGDIOBJ);
+        }
+
+        if window_state.bitmap_device_context.is_null() {
+            unsafe {
+                window_state.bitmap_device_context = CreateCompatibleDC(ptr::null_mut());
+            }
+        }
+
+        let mut bitmap_info_header: BITMAPINFOHEADER = Default::default();
         bitmap_info_header.biSize = std::mem::size_of::<BITMAPINFOHEADER>() as u32;
         bitmap_info_header.biWidth = width;
         bitmap_info_header.biHeight = height;
@@ -361,25 +415,30 @@ fn on_size(h_wnd: HWND, width: c_int, height: c_int) {
         bitmap_info_header.biYPelsPerMeter = 0;
         bitmap_info_header.biClrUsed = 0;
         bitmap_info_header.biClrImportant = 0;
-        let bitmap_info = BITMAPINFO { bmiHeader: bitmap_info_header, bmiColors: [Default::default()]};
+        let mut bitmap_info = BITMAPINFO { bmiHeader: bitmap_info_header, bmiColors: [Default::default()]};
         let mut bitmap_memory: [u32; 800 * 600] = [0; 800 * 600];
-
-        let hdc = CreateCompatibleDC(ptr::null_mut());
+        window_state.bitmap_memory = bitmap_memory.as_mut_ptr();
         
-        let bitmap = CreateDIBSection(hdc, &mut bitmap_info, DIB_RGB_COLORS, bitmap_memory.as_mut_ptr() as *mut *mut c_void,
-                                      ptr::null_mut(), 0);
+        unsafe {
+            window_state.bitmap_handle = CreateDIBSection(window_state.bitmap_device_context, &mut bitmap_info, DIB_RGB_COLORS, bitmap_memory.as_mut_ptr() as *mut *mut c_void, ptr::null_mut(), 0);
+        }
+
+        set_window_ptr(h_wnd, window_state);
     }
 }
 
-fn update_window(hdc: HDC, x: c_int, y: c_int, width: c_int, height: c_int) {
-    unsafe {
-        StretchDIBits(hdc,
-                      x, y, width, height,
-                      x, y, width, height,
-                      bits, bits_info,
-                      DIB_RGB_COLORS, SRCCOPY
-        );
+fn update_window(h_wnd: HWND, x: c_int, y: c_int, width: c_int, height: c_int) {
+    if let Some(window_state) = get_window_ptr(h_wnd) {
+        unsafe {
+            // StretchDIBits(hdc,
+            //               x, y, width, height,
+            //               x, y, width, height,
+            //               window_state.bitmap_memory.as_mut_ptr(), window_state.bitmap_info.as_mut_ptr(),
+            //               DIB_RGB_COLORS, SRCCOPY
+            // );
+        }
     }
+    
 }
 
 pub const WS_OVERLAPPED: DWORD = 0;
@@ -415,28 +474,34 @@ impl Window for Win32Window {
             if hwnd.is_null() {
                 let error = GetLastError();
                 println!("Error: {}", error);
-                Win32Window { hwnd, user_data: WindowPtrData { running: false} };
+
+                let window_state = Win32WindowState::new();
+                
+                Win32Window { hwnd, window_state};
             }
 
             // 5 for SW_SHOW
             let show = ShowWindow(hwnd, 5);
 
-            let user_data = WindowPtrData { running: true };
-            
-            let window = Win32Window { hwnd, user_data };
+            let mut window_state = Win32WindowState::new();
+            window_state.open = true;
 
-            SetWindowLongPtrA(hwnd, GWLP_USERDATA, (&window.user_data as *const WindowPtrData) as isize);
+            let window = Win32Window { hwnd, window_state};
+
+            set_window_ptr(hwnd, &window.window_state);
             window
         }
     }
 
     fn is_open(&self) -> bool {
-        unsafe {
-            let data = GetWindowLongPtrA(self.hwnd, GWLP_USERDATA) as *const WindowPtrData;
-            if data.is_null() {
+        let window_state = get_window_ptr(self.hwnd);
+
+        match window_state {
+            Some(state) => {
+                state.open
+            },
+            None => {
                 false
-            } else {
-                (*data).running
             }
         }
     }
