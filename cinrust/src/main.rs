@@ -10,5 +10,6 @@ fn main() {
     while window.is_open() {
         window.poll_events();
     }
+    println!("Oops");
 
 }

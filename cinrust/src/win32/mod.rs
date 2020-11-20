@@ -170,7 +170,7 @@ impl WNDCLASSA {
 }
 
 #[repr(C)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct BITMAPINFOHEADER {
   pub biSize:        DWORD, 
   pub biWidth:       LONG , 
@@ -186,7 +186,7 @@ struct BITMAPINFOHEADER {
 }
 
 #[repr(C)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct RGBQUAD {
   rgbBlue:     BYTE, 
   rgbGreen:    BYTE, 
@@ -196,7 +196,7 @@ struct RGBQUAD {
 
 
 #[repr(C)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct BITMAPINFO {
   bmiHeader: BITMAPINFOHEADER,
   bmiColors: [RGBQUAD; 1]
@@ -205,7 +205,8 @@ struct BITMAPINFO {
 extern "system" {
     fn CreateWindowExA(dwExStyle: DWORD, lpClassName: LPCSTR, lpWindowName: LPCSTR,
                       dwStyle: DWORD, X: i32, Y: i32, nWidth: i32, nHeight: i32,
-                      hWndParent: HWND, hMenu: HMENU, hInstance: HINSTANCE, lpParam: LPVOID) -> HWND;
+                       hWndParent: HWND, hMenu: HMENU, hInstance: HINSTANCE, lpParam: LPVOID) -> HWND;
+    fn IsWindow(hwnd: HWND) -> BOOL;
     fn GetModuleHandleA(lpModuleName: LPCSTR) -> HMODULE;
     fn RegisterClassA(lpWndClass: * const WNDCLASSA) -> ATOM;
     fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> BOOL;
@@ -214,7 +215,7 @@ extern "system" {
     fn GetLastError() -> DWORD;
     fn DefWindowProcA(hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT;
     fn DestroyWindow(hWnd: HWND) -> BOOL;
-    fn SetWindowLongPtrA(hWnd: HWND, nIndex: c_int, dwNewLong: LONG_PTR);
+    fn SetWindowLongPtrA(hWnd: HWND, nIndex: c_int, dwNewLong: LONG_PTR) -> LONG_PTR;
     fn GetWindowLongPtrA(hWnd: HWND, nIndex: c_int) -> LONG_PTR;
     fn GetClientRect(hWnd: HWND, lpRect: LPRECT) -> BOOL;
     fn CreateDIBSection(hdc: HDC, pbmi: *const BITMAPINFO, usage: UINT, ppvbits: *mut *mut VOID, hSection: HANDLE, offset: DWORD) -> HBITMAP;
@@ -270,16 +271,55 @@ const RGB_BLUE: COLORREF  =  0x00FF0000;
 const RGB_BLACK: COLORREF =  0x00000000;
 const RGB_WHITE: COLORREF =  0x00FFFFFF;
 
-const WM_DESTROY: UINT = 0x0002;
-const WM_SIZE: UINT = 0x0005;
-const WM_PAINT: UINT = 0x000f;
-const WM_CLOSE: UINT = 0x0010;
+const WM_NULL: UINT =                   0x0000;
+const WM_CREATE: UINT =                 0x0001;
+const WM_DESTROY: UINT =                0x0002;
+const WM_MOVE: UINT =                   0x0003;
+const WM_SIZE: UINT =                   0x0005;
+const WM_ACTIVATE: UINT =               0x0006;
+const WM_SETFOCUS: UINT =               0x0007;
+const WM_ENABLED: UINT =                0x000A;
+const WM_PAINT: UINT =                  0x000F;
+const WM_CLOSE: UINT =                  0x0010;
+const WM_QUIT: UINT =                   0x0012;
+const WM_QUERYOPEN: UINT =              0x0013;
+const WM_ERASEBKGND: UINT =             0x0014;
+const WM_SHOWWINDOW: UINT =             0x0018;
+const WM_ACTIVATEAPP: UINT =            0x001C;
+const WM_CANCELMODE: UINT =             0x001F;
+const WM_CHILDACTIVATE: UINT =          0x0022;
+const WM_GETMINMAXINFO: UINT =          0x0024;
+const WM_QUERYDRAGICON: UINT =          0x0037;
+const WM_COMPACTING: UINT =             0x0041;
+const WM_WINDOWPOSCHANGING: UINT =      0x0046;
+const WM_WINDOWPOSCHANGED: UINT =       0x0047;
+const WM_INPUTLANGCHANGEREQUEST: UINT = 0x0050;
+const WM_INPUTLANGCHANGE: UINT =        0x0051;
+const WM_USERCHANGED: UINT =            0x0054;
+const WM_STYLECHANGING: UINT =          0x007C;
+const WM_STYLECHANGED: UINT =           0x007D;
+const WM_GETICON: UINT =                0x007F;
+const WM_NCCREATE: UINT =               0x0081;
+const WM_NCDESTROY: UINT =              0x0082;
+const WM_NCALCSIZE: UINT =              0x0083;
+const WM_NCPAINT: UINT =                0x0085;
+const WM_NACTIVATE: UINT =              0x0086;
+const WM_SIZING: UINT =                 0x0214;
+const WM_MOVING: UINT =                 0x0216;
+const WM_ENTERSIZEMOVE: UINT =          0x0231;
+const WM_EXITSIZEMOVE: UINT =           0x0232;
+const WM_IME_SETCONTEXT: UINT =         0x0281;
+const WM_IME_NOTIFY: UINT =             0x0282;
+const WM_DPICHANGED: UINT =             0x02E0;
+const WM_THEMECHANGED: UINT =           0x031A;
 
 const MB_OKCANCEL: UINT = 0x00000001;
 const IDOK: INT = 1;
 
 const COLOR_WINDOW: UINT = 5;
 
+#[repr(C)]
+#[derive(Debug)]
 struct Win32WindowState {
     bitmap_device_context: HDC,
     bitmap_handle: HBITMAP,
@@ -321,9 +361,20 @@ fn set_open(hwnd: HWND, open: bool) {
     }
 }
 
+fn print_last_error(file: &'static str, line: u32) {
+    let error_code = unsafe {
+        GetLastError()
+    };
+    println!("Error in call in file {} on line {} : {}", file, line, error_code);
+}
+
 fn set_window_ptr(hwnd: HWND, win_state: &Win32WindowState) {
     unsafe {
-        SetWindowLongPtrA(hwnd, GWLP_USERDATA, (win_state as *const Win32WindowState) as isize);
+        println!("{:?}", win_state);
+        let result = SetWindowLongPtrA(hwnd, GWLP_USERDATA, (win_state as *const Win32WindowState) as isize);
+        if result == 0 {
+            print_last_error(file!(), line!());
+        }
     }
 }
 
@@ -345,13 +396,14 @@ fn get_window_ptr<'a>(hwnd: HWND) -> Option<&'a mut Win32WindowState> {
 pub const GWLP_USERDATA: INT = -21;
 
 unsafe extern "system" fn window_proc(hwnd: HWND, u_msg: UINT, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    println!("0x{}", format!("{:01$x}", u_msg, 4));
     let result = match u_msg {
         WM_SIZE => {
             let mut rect = RECT::new();
             GetClientRect(hwnd, &mut rect);
             let width = rect.right - rect.left;
             let height = rect.bottom - rect.top;
-            on_size(hwnd, width, height);
+            // on_size(hwnd, width, height);
             DefWindowProcA(hwnd, u_msg, w_param, l_param)
         },
         WM_DESTROY => {
@@ -398,9 +450,9 @@ fn on_size(h_wnd: HWND, width: c_int, height: c_int) {
         }
 
         if window_state.bitmap_device_context.is_null() {
-            unsafe {
-                window_state.bitmap_device_context = CreateCompatibleDC(ptr::null_mut());
-            }
+            window_state.bitmap_device_context = unsafe {
+                CreateCompatibleDC(ptr::null_mut())
+            };
         }
 
         let mut bitmap_info_header: BITMAPINFOHEADER = Default::default();
@@ -429,14 +481,14 @@ fn on_size(h_wnd: HWND, width: c_int, height: c_int) {
 
 fn update_window(h_wnd: HWND, x: c_int, y: c_int, width: c_int, height: c_int) {
     if let Some(window_state) = get_window_ptr(h_wnd) {
-        unsafe {
-            // StretchDIBits(hdc,
-            //               x, y, width, height,
-            //               x, y, width, height,
-            //               window_state.bitmap_memory.as_mut_ptr(), window_state.bitmap_info.as_mut_ptr(),
-            //               DIB_RGB_COLORS, SRCCOPY
-            // );
-        }
+        // unsafe {
+        //     StretchDIBits(hdc,
+        //                   x, y, width, height,
+        //                   x, y, width, height,
+        //                   window_state.bitmap_memory.as_mut_ptr(), window_state.bitmap_info.as_mut_ptr(),
+        //                   DIB_RGB_COLORS, SRCCOPY
+        //     );
+        // }
     }
     
 }
@@ -465,19 +517,22 @@ impl Window for Win32Window {
             wnd_class.lpszClassName = class_name.as_ptr();
             wnd_class.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
 
-            RegisterClassA(&wnd_class);
+            let result = RegisterClassA(&wnd_class);
+            if result == 0 {
+                print_last_error(file!(), line!());
+                let window_state = Win32WindowState::new();
+                return Win32Window { hwnd: 0 as HWND, window_state};
+            }
             
             let hwnd = CreateWindowExA(0, class_name.as_ptr(), name.as_ptr(), WS_OVERLAPPEDWINDOW,
                                        CW_USEDEFAULT, CW_USEDEFAULT, width as c_int, height as c_int, ptr::null_mut(),
                                        ptr::null_mut(), h_instance, ptr::null_mut());
 
             if hwnd.is_null() {
-                let error = GetLastError();
-                println!("Error: {}", error);
+                print_last_error(file!(), line!());
 
                 let window_state = Win32WindowState::new();
-                
-                Win32Window { hwnd, window_state};
+                return Win32Window { hwnd, window_state};
             }
 
             // 5 for SW_SHOW
