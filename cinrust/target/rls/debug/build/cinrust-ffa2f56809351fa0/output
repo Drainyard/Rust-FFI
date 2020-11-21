@@ -1,4 +1,0 @@
-c:\Users\Niels\projects\rust-ffi\cinrust
-cargo:rustc-link-lib=Gdi32
-cargo:rustc-link-lib=User32
-cargo:rustc-link-search=c:\Users\Niels\projects\rust-ffi\cinrust\lib/Win32
