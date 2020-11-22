@@ -1,6 +1,7 @@
 use cty::{c_int};
-use crate::shared::windef::{BOOL, HGDIOBJ, UINT, VOID, HANDLE, DWORD, HBITMAP, HDC, LONG, WORD, BYTE,
-MAKEWORD, HBRUSH};
+use crate::shared::windef::{BOOL, HGDIOBJ, UINT, HANDLE, DWORD, HBITMAP, HDC, WORD, BYTE,
+                            MAKEWORD, HBRUSH};
+use crate::um::winnt::{VOID, LONG};
 
 pub fn RGB(r: BYTE, g: BYTE, b: BYTE) -> DWORD {
     // Reversed due to endianness of FillRect

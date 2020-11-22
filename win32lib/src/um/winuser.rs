@@ -149,12 +149,12 @@ extern "system" {
     pub fn ShowWindow(hwnd: HWND, nCmdShow: i32) -> BOOL;
     
     pub fn CreateCompatibleDC(hdc: HDC) -> HDC;
-    pub fn GetLastError() -> DWORD;
+
     pub fn DefWindowProcA(hWnd: HWND, Msg: UINT, wParam: WPARAM, lParam: LPARAM) -> LRESULT;
     pub fn DestroyWindow(hWnd: HWND) -> BOOL;
     pub fn SetWindowLongPtrA(hWnd: HWND, nIndex: c_int, dwNewLong: LONG_PTR) -> LONG_PTR;
     pub fn GetWindowLongPtrA(hWnd: HWND, nIndex: c_int) -> LONG_PTR;
-    pub fn SetLastError(dwErrCode: DWORD);
+
     pub fn GetClientRect(hWnd: HWND, lpRect: LPRECT) -> BOOL;
 
 

@@ -1,4 +1,5 @@
-use cty::{c_ulong, c_void, c_int, c_ushort, c_long, c_uchar};
+use cty::{c_ulong, c_void, c_int, c_ushort, c_uchar};
+use crate::um::winnt::{ VOID, LONG, INT };
 
 macro_rules! opaque {
     ($struct:ident) => {
@@ -20,13 +21,12 @@ opaque!(HINSTANCE__);
 pub type HINSTANCE = *mut HINSTANCE__;
 pub type HMODULE = HINSTANCE;
 pub type HANDLE = *mut c_void;
-pub type VOID = c_void;
+
 pub type LPVOID = *mut VOID;
 pub type UINT = u32;
-pub type INT = i32;
 pub type UINT_PTR = usize;
 pub type WPARAM = UINT_PTR;
-pub type LONG = c_long;
+
 pub type LONG_PTR = isize;
 pub type LPARAM = LONG_PTR;
 pub type INT_PTR = isize;
