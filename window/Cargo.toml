@@ -1,18 +1,11 @@
 [package]
-name = "cinrust"
+name = "window"
 version = "0.1.0"
 authors = ["Niels Bross <niels@glitchheart.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[[bin]]
-name = "window_test"
-test = false
-bench = false
-
 [dependencies]
-win32lib = {path = "../win32lib"}
+win32lib = { path = "../win32lib" }
 cty = "0.2.1"
-libc = "0.2.0"
-

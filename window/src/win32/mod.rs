@@ -3,7 +3,7 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-use crate::window::*;
+use crate::{ Window, BitmapBuffer };
 
 use win32lib::shared::windef::{DWORD, HDC, HWND, GWLP_USERDATA, UINT, WPARAM, LPARAM, LRESULT, RECT,
              BOOL, CS_OWNDC, CS_VREDRAW, CS_HREDRAW};

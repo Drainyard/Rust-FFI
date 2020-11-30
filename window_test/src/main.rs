@@ -1,8 +1,6 @@
-mod win32_window;
-mod window;
 
 #[cfg(target_os ="windows")]
-use win32_window::create_window;
+use window::win32::create_window;
 use window::Window;
 use std::convert::TryInto;
 

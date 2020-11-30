@@ -1,3 +1,4 @@
+pub mod win32;
 
 pub struct BitmapBuffer<'a> {
     pub width: i32,

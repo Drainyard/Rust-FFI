@@ -2,5 +2,6 @@
 
 members = [
 	"window_test",
-	"win32lib"
+	"win32lib",
+	"window"
 ]

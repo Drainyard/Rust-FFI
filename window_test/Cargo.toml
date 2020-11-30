@@ -8,5 +8,5 @@ edition = "2018"
 
 
 [dependencies]
-win32lib = {path = "../win32lib"}
-cty = "0.2.1"
+window = { path = "../window" }
+
