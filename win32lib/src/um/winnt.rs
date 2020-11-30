@@ -8,3 +8,8 @@ pub type INT = c_int;
 pub type LPSTR = *mut CHAR;
 pub type LPCSTR = *const CHAR;
 
+#[repr(C)]
+struct LUID {
+    LowPart: DWORD,
+    HighPart: LONG
+}
