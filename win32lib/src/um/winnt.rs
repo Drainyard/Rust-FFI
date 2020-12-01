@@ -1,4 +1,6 @@
-use cty::{c_char, c_void, c_long, c_int};
+use cty::{c_char, c_void, c_long, c_int, int64_t};
+
+use crate::shared::minwindef::{ ULONG };
 
 pub type CHAR = c_char;
 pub type VOID = c_void;
@@ -8,8 +10,38 @@ pub type INT = c_int;
 pub type LPSTR = *mut CHAR;
 pub type LPCSTR = *const CHAR;
 
-#[repr(C)]
-struct LUID {
-    LowPart: DWORD,
-    HighPart: LONG
-}
+pub type wchar_t = u16;
+pub type WCHAR = wchar_t;
+
+pub type LONGLONG = int64_t;
+pub type ULONGLONG = int64_t;
+
+STRUCT! { struct LUID {
+    LowPart: ULONG,
+    HighPart: LONG,
+}}
+
+// UNION! { union LARGE_INTEGER {
+//     [i64; 1],
+//     s s_mut: LARGE_INTEGER_s,
+//     u u_mut: LARGE_INTEGER_u,
+//     QuadPart QuadPart_mut: LONGLONG,
+// }}
+
+UNION! { union LARGE_INTEGER {
+    s: LARGE_INTEGER_s,
+    u: LARGE_INTEGER_u,
+    QuadPart: LONGLONG,
+}}
+
+STRUCT! { struct LARGE_INTEGER_s {
+    LowPart: ULONG,
+    HighPart: LONG,
+}}
+
+STRUCT! { struct LARGE_INTEGER_u {
+    LowPart: ULONG,
+    HighPart: LONG,
+}}
+
+

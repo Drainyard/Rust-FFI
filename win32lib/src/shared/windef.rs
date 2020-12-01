@@ -1,26 +1,7 @@
 use cty::{c_ulong, c_void, c_int, c_ushort, c_uchar};
 use crate::um::winnt::{ VOID, LONG, INT };
 
-macro_rules! opaque {
-    ($struct:ident) => {
-        #[repr(C)] pub struct $struct { private: [u8; 0] }
-    }
-}
-
-#[repr(C)]
-opaque!(HWND__);
-pub type HWND = *mut HWND__;
-
 pub type DWORD = c_ulong;
-
-#[repr(C)]
-opaque!(HMENU__);
-pub type HMENU = *mut HMENU__;
-
-opaque!(HINSTANCE__);
-pub type HINSTANCE = *mut HINSTANCE__;
-pub type HMODULE = HINSTANCE;
-pub type HANDLE = *mut c_void;
 
 pub type LPVOID = *mut VOID;
 pub type UINT = u32;
@@ -35,24 +16,25 @@ pub type WORD = c_ushort;
 pub type ATOM = WORD;
 pub type BOOL = c_int;
 
-opaque!(HICON__);
-pub type HICON = *mut HICON__;
+opaque!(HICON, HICON__);
+opaque!(HCURSOR, HCURSOR__);
+opaque!(HBRUSH, HBRUSH__);
+opaque!(HMONITOR, HMONITOR__);
+opaque!(HWND, HWND__);
+opaque!(HMENU, HMENU__);
+opaque!(HINSTANCE, HINSTANCE__);
+pub type HMODULE = HINSTANCE;
+pub type HANDLE = *mut c_void;
 
-opaque!(HCURSOR__);
-pub type HCURSOR = *mut HCURSOR__;
-
-opaque!(HBRUSH__);
-pub type HBRUSH = *mut HBRUSH__;
 
 pub const CS_VREDRAW: UINT = 0x0001;
 pub const CS_HREDRAW: UINT = 0x0002;
 pub const CS_OWNDC: UINT = 0x0020;
 
-#[repr(C)]
-pub struct POINT {
+STRUCT! { struct POINT {
     x: LONG,
-    y: LONG
-}
+    y: LONG,
+}}
 
 impl POINT {
     pub fn new() -> POINT {
@@ -62,21 +44,18 @@ impl POINT {
 
 pub type BYTE = c_uchar;
 
-opaque!(HDC__);
-pub type HDC = *mut HDC__;
+opaque!(HDC, HDC__);
 
-opaque!(HBITMAP__);
-pub type HBITMAP = *mut HBITMAP__;
+opaque!(HBITMAP, HBITMAP__);
 
 pub type HGDIOBJ = *mut c_void;
 
-#[repr(C)]
-pub struct RECT {
-    pub left: LONG,
-    pub top: LONG,
-    pub right: LONG,
-    pub bottom: LONG,
-}
+STRUCT! { struct RECT {
+    left: LONG,
+    top: LONG,
+    right: LONG,
+    bottom: LONG,
+}}
 
 pub type LPRECT = *mut RECT;
 
