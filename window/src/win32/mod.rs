@@ -18,7 +18,7 @@ use win32lib::um::errhandlingapi::{GetLastError, SetLastError};
 
 use win32lib::um::wingdi::{DeleteObject, StretchDIBits};
 use win32lib::um::wingdi::{BITMAPINFO, BITMAPINFOHEADER};
-use win32lib::shared::dxgi::{ IDXDGIFactory4 };
+use win32lib::shared::dxgi1_4::{ IDXGIFactory4 };
 
 use std::ptr;
 use cty::{c_void, c_int};

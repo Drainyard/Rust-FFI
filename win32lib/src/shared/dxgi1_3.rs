@@ -10,7 +10,6 @@ use crate::shared::guiddef::{ REFIID };
 use crate::shared::windef::{ UINT, BOOL, HWND };
 use crate::shared::dxgi1_2::{ IDXGIFactory2 };
 
-use crate::um::winnt::{ LUID };
 use crate::um::unknwn::{ IUnknown };
 
 interfaces! {

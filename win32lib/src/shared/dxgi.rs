@@ -1,18 +1,35 @@
 use com::interfaces;
+use com::{ AbiTransferable };
 use cty::{ c_void };
 
 use crate::shared::winerror::{ HRESULT };
 use crate::shared::guiddef::{ REFIID, REFGUID };
-use crate::shared::windef::{ UINT, BOOL, HWND, RECT, HMONITOR, BYTE, HMODULE };
+use crate::shared::windef::{ UINT, BOOL, HWND, RECT, HMONITOR, BYTE, HMODULE, DWORD };
 use crate::shared::basetsd::{ SIZE_T };
 
-use crate::um::winnt::{ LUID, WCHAR, LARGE_INTEGER, INT };
+use crate::um::winnt::{ WCHAR, LARGE_INTEGER, INT, LONG };
 use crate::um::unknwn::{ IUnknown };
 
 use crate::shared::dxgitype::{ DXGI_MODE_ROTATION, DXGI_MODE_DESC, DXGI_GAMMA_CONTROL,
                                DXGI_GAMMA_CONTROL_CAPABILITIES };
 use crate::shared::dxgiformat::{ DXGI_FORMAT };
 use crate::shared::dxgicommon::{ DXGI_SAMPLE_DESC };
+
+STRUCT! { struct LUID {
+    LowPart: DWORD,
+    HighPart: LONG,
+}}
+
+// Required for interface
+unsafe impl AbiTransferable for LUID {
+    type Abi = Self;
+    fn get_abi(&self) -> Self::Abi {
+        *self
+    }
+    fn set_abi(&mut self) -> *mut Self::Abi {
+        self as *mut Self::Abi
+    }
+}
 
 ENUM!{enum DXGI_USAGE {
     DXGI_CPU_ACCESS_NONE             = 0,

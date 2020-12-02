@@ -7,9 +7,8 @@ use crate::shared::windef::{ UINT, BOOL, HWND, RECT, POINT, HANDLE, DWORD };
 use crate::shared::dxgiformat::{ DXGI_FORMAT };
 use crate::shared::dxgicommon::{ DXGI_SAMPLE_DESC, DXGI_RATIONAL };
 use crate::shared::dxgitype::{ DXGI_MODE_SCANLINE_ORDER, DXGI_MODE_SCALING, DXGI_RGBA, DXGI_MODE_ROTATION };
-use crate::shared::dxgi::{ DXGI_USAGE, DXGI_SWAP_EFFECT, IDXGIOutput, IDXGISwapChain, IDXGIFactory1 };
+use crate::shared::dxgi::{ DXGI_USAGE, DXGI_SWAP_EFFECT, IDXGIOutput, IDXGISwapChain, IDXGIFactory1, LUID };
 
-use crate::um::winnt::{ LUID };
 use crate::um::unknwn::{ IUnknown };
 
 ENUM!{enum DXGI_SCALING {

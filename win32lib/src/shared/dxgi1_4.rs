@@ -9,8 +9,8 @@ use crate::shared::winerror::{ HRESULT };
 use crate::shared::guiddef::{ REFIID };
 use crate::shared::windef::{ UINT, BOOL, HWND };
 use crate::shared::dxgi1_3::{ IDXGIFactory3 };
+use crate::shared::dxgi::{ LUID };
 
-use crate::um::winnt::{ LUID };
 use crate::um::unknwn::{ IUnknown };
 
 interfaces! {

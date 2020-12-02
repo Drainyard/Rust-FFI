@@ -1,4 +1,5 @@
 use cty::{c_char, c_void, c_long, c_int, int64_t};
+//use com::interfaces::Interface;
 
 use crate::shared::minwindef::{ ULONG };
 
@@ -15,11 +16,6 @@ pub type WCHAR = wchar_t;
 
 pub type LONGLONG = int64_t;
 pub type ULONGLONG = int64_t;
-
-STRUCT! { struct LUID {
-    LowPart: ULONG,
-    HighPart: LONG,
-}}
 
 // UNION! { union LARGE_INTEGER {
 //     [i64; 1],
