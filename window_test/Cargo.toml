@@ -9,4 +9,5 @@ edition = "2018"
 
 [dependencies]
 window = { path = "../window" }
+win32lib = { path = "../win32lib" }
 

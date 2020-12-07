@@ -12,4 +12,11 @@ pub const E_HANDLE: HRESULT       = 0x80070006; 	// Handle that is not valid
 pub const E_OUTOFMEMORY: HRESULT  = 0x8007000E; 	// Failed to allocate necessary memory
 pub const E_INVALIDARG: HRESULT   = 0x80070057; 	// One or more arguments are not valid
 
+pub const DXGI_ERROR_NOT_FOUND: HRESULT = 0x887A0002;
+
 pub type HRESULT = c_ulong;
+
+#[inline]
+pub fn SUCCEEDED(hr: HRESULT) -> bool {
+    hr >= 0
+}

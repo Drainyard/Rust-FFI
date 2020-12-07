@@ -18,3 +18,8 @@ interfaces! {
         pub fn GetCreationFlags(&self) -> UINT;
     }
 }
+
+extern "system" {
+    pub fn CreateDXGIFactory2(Flags: UINT, riid: REFIID, ppFactory: *mut *mut c_void) -> HRESULT;
+}
+

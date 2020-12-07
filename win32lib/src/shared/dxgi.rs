@@ -104,6 +104,13 @@ STRUCT! { struct DXGI_ADAPTER_DESC {
     AdapterLuid: LUID,
 }}
 
+ENUM!{enum DXGI_ADAPTER_FLAG {
+    DXGI_ADAPTER_FLAG_NONE            = 0,
+    DXGI_ADAPTER_FLAG_REMOTE          = 1,
+    DXGI_ADAPTER_FLAG_SOFTWARE        = 2,
+    DXGI_ADAPTER_FLAG_FORCE_DWORD     = 3,
+}}
+
 STRUCT! { struct DXGI_ADAPTER_DESC1 {
     Description: [WCHAR; 128],
     VendorId: UINT,
@@ -208,3 +215,7 @@ interfaces! {
         pub fn GetFrameStatistics(&self, pStats: *mut DXGI_FRAME_STATISTICS)  -> HRESULT;
     }
 }
+
+DEFINE_GUID!{IID_IDXGIAdapter1, 0x29038f61, 0x3839, 0x4626, 0x91, 0xfd, 0x08, 0x68, 0x79, 0x01, 0x1a, 0x05}
+DEFINE_GUID!{IID_IDXGIFactory1, 0x770aae78, 0xf26f, 0x4dba, 0xa8, 0x29, 0x25, 0x3c, 0x83, 0xd1, 0xb3, 0x87}
+DEFINE_GUID!{IID_IDXGIAdapter, 0x2411e7e1, 0x12ac, 0x4ccf, 0xbd, 0x14, 0x97, 0x98, 0xe8, 0x53, 0x4d, 0xc0}
